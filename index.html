@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="theme-color" content="#f6f6f4">
+		<link rel="manifest" href="./manifest.json">
+		<title>Activity Done</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+		<style>
+			:root {
+				color-scheme: light;
+				font-family: 'Inter', sans-serif;
+				background: #f6f6f4;
+				color: #1c1c1a;
+				--muted: #8f8f8a;
+				--coral: #ff776b;
+			}
+
+			* { box-sizing: border-box; }
+
+			body {
+				min-height: 100vh;
+				margin: 0;
+				padding: 32px 20px 48px;
+				-webkit-font-smoothing: antialiased;
+			}
+			body.activity-theme { background: #ffe0da; }
+
+			main {
+				max-width: 440px;
+				margin: 0 auto;
+			}
+
+			[hidden] { display: none !important; }
+			h1 { margin: 0 0 24px; font-size: 21px; font-weight: 500; }
+			.hero {
+				padding: 20px 18px;
+				border-radius: 8px;
+				background: #ffe0da;
+			}
+			.hero-title {
+				margin: 0 0 20px;
+				font-size: clamp(26px, 8vw, 34px);
+				font-weight: 600;
+				line-height: 1.15;
+			}
+
+			button {
+				width: 100%;
+				min-height: 46px;
+				border: 0;
+				border-radius: 6px;
+				background: #1c1c1a;
+				color: #fff;
+				font: 500 15px 'Inter', sans-serif;
+				cursor: pointer;
+			}
+
+			button:hover { background: #383836; }
+			button:focus-visible { outline: 2px solid #1c1c1a; outline-offset: 3px; }
+			.not-completed-button {
+				margin-top: 12px;
+				background: transparent;
+				border: 1px solid #1c1c1a;
+				color: #1c1c1a;
+			}
+			.not-completed-button:hover { background: rgba(28, 28, 26, 0.08); }
+			.timer-label { margin: 0 0 4px; color: #5b5b56; font-size: 14px; }
+			.timer {
+				margin: 0 0 24px;
+				font-size: 56px;
+				font-weight: 600;
+				font-variant-numeric: tabular-nums;
+				line-height: 1.15;
+			}
+			.undo-button {
+				display: block;
+				width: auto;
+				min-height: 0;
+				margin: 12px 0 0 auto;
+				padding: 0;
+				background: none;
+				color: #1c1c1a;
+				font-size: 14px;
+			}
+			.undo-button:hover:not(:disabled) { background: none; text-decoration: underline; }
+			button:disabled { cursor: not-allowed; color: var(--muted); }
+
+			.progress { margin-top: 40px; }
+			.progress h2 { margin: 0 0 8px; font-size: 18px; font-weight: 500; }
+			.count { margin: 0 0 18px; font-size: 14px; color: var(--muted); }
+			.ticks {
+				display: grid;
+				grid-template-columns: repeat(7, minmax(0, 1fr));
+				row-gap: 8px;
+			}
+
+			.tick {
+				display: grid;
+				place-items: center;
+				width: 70%;
+				aspect-ratio: 1;
+				margin: auto;
+				background: var(--coral);
+				color: #1c1c1a;
+				font-size: 20px;
+				font-weight: 600;
+			}
+			.tick--circle { border-radius: 50%; }
+			.tick--triangle { clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+		</style>
+	</head>
+	<body>
+		<main>
+			<section id="home-view">
+				<h1>Activity done</h1>
+				<div class="hero">
+					<p class="hero-title">Mark each activity as you finish it.</p>
+					<button id="start-button" type="button">Prepare activity</button>
+				</div>
+				<section class="progress" aria-label="Completed activities">
+					<h2>Completed</h2>
+					<p class="count" id="count" aria-live="polite">0 activities completed</p>
+					<div class="ticks" id="ticks" aria-hidden="true"></div>
+					<button class="undo-button" id="undo-button" type="button" disabled>Undo activity</button>
+				</section>
+			</section>
+			<section id="prepare-view" hidden>
+				<h1>Prepare</h1>
+				<p class="timer-label">Time remaining</p>
+				<p class="timer" id="prepare-timer" role="timer">05:00</p>
+				<button id="begin-activity-button" type="button">Start activity</button>
+				<button class="not-completed-button" id="prepare-not-completed-button" type="button">Not completed</button>
+			</section>
+			<section id="activity-view" hidden>
+				<h1>Activity</h1>
+				<p class="timer-label">Time remaining</p>
+				<p class="timer" id="timer" role="timer">05:00</p>
+				<button id="done-button" type="button">Activity done</button>
+				<button class="not-completed-button" id="not-completed-button" type="button">Not completed</button>
+			</section>
+		</main>
+		<script>
+			if (location.protocol !== 'file:' && 'serviceWorker' in navigator) {
+				window.addEventListener('load', () => {
+					navigator.serviceWorker.register('./sw.js').catch(error => {
+						console.error('Service worker registration failed:', error);
+					});
+				});
+			}
+
+			const homeView = document.getElementById('home-view');
+			const prepareView = document.getElementById('prepare-view');
+			const activityView = document.getElementById('activity-view');
+			const button = document.getElementById('done-button');
+			const undoButton = document.getElementById('undo-button');
+			const count = document.getElementById('count');
+			const ticks = document.getElementById('ticks');
+			let timer = document.getElementById('prepare-timer');
+			let completed = 0;
+			let timerInterval = null;
+			let timerEndsAt = 0;
+
+			function updateTimer() {
+				const seconds = Math.max(0, Math.ceil((timerEndsAt - Date.now()) / 1000));
+				timer.textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+				if (seconds === 0) {
+					clearInterval(timerInterval);
+					timerInterval = null;
+				}
+			}
+
+			function startTimer(display) {
+				clearInterval(timerInterval);
+				timer = display;
+				document.body.classList.add('activity-theme');
+				timerEndsAt = Date.now() + 5 * 60 * 1000;
+				updateTimer();
+				timerInterval = setInterval(updateTimer, 250);
+			}
+
+			document.getElementById('start-button').addEventListener('click', () => {
+				homeView.hidden = true;
+				prepareView.hidden = false;
+				startTimer(document.getElementById('prepare-timer'));
+			});
+
+			document.getElementById('begin-activity-button').addEventListener('click', () => {
+				prepareView.hidden = true;
+				activityView.hidden = false;
+				startTimer(document.getElementById('timer'));
+			});
+
+			function showHome() {
+				clearInterval(timerInterval);
+				timerInterval = null;
+				prepareView.hidden = true;
+				activityView.hidden = true;
+				homeView.hidden = false;
+				document.body.classList.remove('activity-theme');
+			}
+
+			document.getElementById('not-completed-button').addEventListener('click', showHome);
+			document.getElementById('prepare-not-completed-button').addEventListener('click', showHome);
+
+			function updateCount() {
+				const label = `${completed} ${completed === 1 ? 'activity' : 'activities'} completed`;
+				count.textContent = label;
+				undoButton.disabled = completed === 0;
+			}
+
+			button.addEventListener('click', () => {
+				completed += 1;
+				const tick = document.createElement('span');
+				const shapes = ['circle', 'square', 'triangle'];
+				const colors = ['#ff776b', '#f2c14e', '#77c9a5', '#78b7d0', '#c79ad8', '#f19ca8'];
+				const shape = shapes[Math.floor(Math.random() * shapes.length)];
+				tick.className = `tick tick--${shape}`;
+				tick.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+				tick.textContent = '\u2713';
+				ticks.append(tick);
+				updateCount();
+				showHome();
+			});
+
+			undoButton.addEventListener('click', () => {
+				ticks.lastElementChild.remove();
+				completed -= 1;
+				updateCount();
+			});
+		</script>
+	</body>
+</html>
