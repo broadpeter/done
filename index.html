@@ -120,32 +120,29 @@
 	<body>
 		<main>
 			<section id="home-view">
-				<h1>Activity done</h1>
-				<div class="hero">
-					<p class="hero-title">Mark each activity as you finish it.</p>
-					<button id="start-button" type="button">Prepare activity</button>
-				</div>
+<div class="hero">
+	<p class="hero-title">Start something you've been avoiding.</p>
+	<button id="start-button" type="button">Start</button>
+</div>
 				<section class="progress" aria-label="Completed activities">
-					<h2>Completed</h2>
-					<p class="count" id="count" aria-live="polite">0 activities completed</p>
+				<p class="count" id="count" aria-live="polite">0 done</p>
 					<div class="ticks" id="ticks" aria-hidden="true"></div>
-					<button class="undo-button" id="undo-button" type="button" disabled>Undo activity</button>
+					<button class="undo-button" id="undo-button" type="button" hidden>Undo activity</button>
 				</section>
 			</section>
 			<section id="prepare-view" hidden>
-				<h1>Prepare</h1>
-				<p class="timer-label">Time remaining</p>
-				<p class="timer" id="prepare-timer" role="timer">05:00</p>
-				<button id="begin-activity-button" type="button">Start activity</button>
-				<button class="not-completed-button" id="prepare-not-completed-button" type="button">Not completed</button>
-			</section>
-			<section id="activity-view" hidden>
-				<h1>Activity</h1>
-				<p class="timer-label">Time remaining</p>
-				<p class="timer" id="timer" role="timer">05:00</p>
-				<button id="done-button" type="button">Activity done</button>
-				<button class="not-completed-button" id="not-completed-button" type="button">Not completed</button>
-			</section>
+	<h1>Pick the next step. Work on it for 5 minutes</h1>
+	<p class="timer-label">Start within 5 minutes</p>
+	<p class="timer" id="prepare-timer" role="timer">5:00</p>
+	<button id="begin-activity-button" type="button">Start 5 minutes</button>
+	<button class="not-completed-button" id="prepare-not-completed-button" type="button">Not this time</button>
+</section>
+		<section id="activity-view" hidden>
+	<h1>Work on the task for five minutes</h1>
+	<p class="timer" id="timer" role="timer">5:00</p>
+	<button id="done-button" type="button">Done</button>
+	<button class="not-completed-button" id="not-completed-button" type="button">Not completed</button>
+</section>
 		</main>
 		<script>
 			if (location.protocol !== 'file:' && 'serviceWorker' in navigator) {
@@ -170,7 +167,7 @@
 
 			function updateTimer() {
 				const seconds = Math.max(0, Math.ceil((timerEndsAt - Date.now()) / 1000));
-				timer.textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+				timer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 				if (seconds === 0) {
 					clearInterval(timerInterval);
 					timerInterval = null;
@@ -211,16 +208,16 @@
 			document.getElementById('prepare-not-completed-button').addEventListener('click', showHome);
 
 			function updateCount() {
-				const label = `${completed} ${completed === 1 ? 'activity' : 'activities'} completed`;
+				const label = `${completed} done`;
 				count.textContent = label;
-				undoButton.disabled = completed === 0;
+				undoButton.hidden = completed === 0;
 			}
 
 			button.addEventListener('click', () => {
 				completed += 1;
 				const tick = document.createElement('span');
 				const shapes = ['circle', 'square', 'triangle', 'diamond'];
-				const colors = ['#ff776b', '#f2c14e', '#77c9a5', '#78b7d0', '#c79ad8', '#f19ca8'];
+				const colors = ['#ff776b', '#f2c14e', '#77c9a5', '#78b7d0', '#4f8edc', '#c79ad8', '#f19ca8'];
 				const shape = shapes[Math.floor(Math.random() * shapes.length)];
 				tick.className = `tick tick--${shape}`;
 				tick.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
