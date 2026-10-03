@@ -110,7 +110,11 @@
 				font-weight: 600;
 			}
 			.tick--circle { border-radius: 50%; }
-			.tick--triangle { clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+			.tick--triangle {
+				width: 78%;
+				clip-path: polygon(50% 6.7%, 0 93.3%, 100% 93.3%);
+			}
+			.tick--diamond { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
 		</style>
 	</head>
 	<body>
@@ -215,7 +219,7 @@
 			button.addEventListener('click', () => {
 				completed += 1;
 				const tick = document.createElement('span');
-				const shapes = ['circle', 'square', 'triangle'];
+				const shapes = ['circle', 'square', 'triangle', 'diamond'];
 				const colors = ['#ff776b', '#f2c14e', '#77c9a5', '#78b7d0', '#c79ad8', '#f19ca8'];
 				const shape = shapes[Math.floor(Math.random() * shapes.length)];
 				tick.className = `tick tick--${shape}`;
