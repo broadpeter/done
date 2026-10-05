@@ -94,18 +94,52 @@
 			.count { margin: 0 0 18px; font-size: 14px; color: var(--muted); }
 			.clear-confirmation { margin-top: 18px; }
 			.clear-confirmation p { font-size: 14px; line-height: 1.5; }
-			.account { margin-top: 24px; }
-			.account p { font-size: 14px; overflow-wrap: anywhere; }
-			.account input {
-				width: 100%;
-				min-height: 46px;
-				margin-bottom: 10px;
-				padding: 10px;
-				border: 1px solid #8f8f8a;
-				border-radius: 6px;
-				font: inherit;
+			.account {
+				margin: 0 0 24px 0;
+				padding: 12px 14px;
+				border: 1px solid #e8e8e5;
+				border-radius: 8px;
+				background: #fff;
 			}
-			.account .undo-button { margin-left: 0; }
+			.sync-row { display: flex; align-items: center; gap: 8px; }
+			.account label {
+				position: absolute;
+				width: 1px;
+				height: 1px;
+				padding: 0;
+				margin: -1px;
+				overflow: hidden;
+				clip: rect(0, 0, 0, 0);
+				white-space: nowrap;
+				border: 0;
+			}
+			.account input {
+				flex: 1;
+				width: 0;
+				min-width: 0;
+				min-height: 0;
+				margin: 0;
+				padding: 8px 9px;
+				border: 1px solid #e8e8e5;
+				border-radius: 5px;
+				font: 13px 'Inter', sans-serif;
+			}
+			.account .sync-button {
+				width: auto;
+				min-height: 0;
+				padding: 0;
+				border: 0;
+				border-radius: 0;
+				background: none;
+				color: var(--muted);
+				font: 13px 'Inter', sans-serif;
+				white-space: nowrap;
+			}
+			.account .sync-button:hover:not(:disabled) { background: none; color: #1c1c1a; }
+			.account p { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+			#account-email { flex: 1; }
+			#account-status:empty { display: none; }
+			#account-status { margin-top: 7px; color: var(--muted); font-size: 12px; line-height: 1.4; }
 			.ticks {
 				display: grid;
 				grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -119,7 +153,7 @@
 				aspect-ratio: 1;
 				margin: auto;
 				background: var(--coral);
-				color: #1c1c1a;
+				color: #fff;
 				font-size: 20px;
 				font-weight: 600;
 			}
@@ -134,20 +168,23 @@
 	<body>
 		<main>
 			<section id="home-view">
-<div class="hero">
+
+				<section class="account" aria-label="Account">
+					<form id="sign-in-form" class="sync-row">
+						<label for="email">Email</label>
+						<input id="email" type="email" autocomplete="email" required placeholder="you@example.com">
+						<button class="sync-button" id="sign-in-button" type="submit">Sign in</button>
+					</form>
+					<div class="sync-row" id="signed-in-account" hidden>
+						<p id="account-email"></p>
+						<button class="sync-button" id="sign-out-button" type="button">Sign out</button>
+					</div>
+					<p id="account-status" role="status" aria-live="polite"></p>
+				</section>
+				<div class="hero">
 	<p class="hero-title">Start something you've been avoiding.</p>
 	<button id="start-button" type="button">Start</button>
 </div>
-				<section class="account" aria-label="Account">
-					<form id="sign-in-form">
-						<label for="email">Email</label>
-						<input id="email" type="email" autocomplete="email" required placeholder="you@example.com">
-						<button id="sign-in-button" type="submit">Email me a sign-in link</button>
-					</form>
-					<p id="account-email" hidden></p>
-					<button class="undo-button" id="sign-out-button" type="button" hidden>Sign out</button>
-					<p id="account-status" role="status" aria-live="polite"></p>
-				</section>
 				<section class="progress" aria-label="Completed activities">
 				<p class="count" id="count" aria-live="polite">0 done</p>
 					<div class="ticks" id="ticks" aria-hidden="true"></div>
@@ -289,9 +326,8 @@
 					loading = !!user;
 					loadFailed = false;
 					signInForm.hidden = !!user;
-					accountEmail.hidden = !user;
 					accountEmail.textContent = user?.email || '';
-					signOutButton.hidden = !user;
+					document.getElementById('signed-in-account').hidden = !user;
 					accountStatus.textContent = user ? '' : 'Sign in to save your activities.';
 					renderHistory();
 					if (user) setTimeout(loadHistory, 0);
