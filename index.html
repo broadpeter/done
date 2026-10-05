@@ -92,6 +92,20 @@
 			.progress { margin-top: 40px; }
 			.progress h2 { margin: 0 0 8px; font-size: 18px; font-weight: 500; }
 			.count { margin: 0 0 18px; font-size: 14px; color: var(--muted); }
+			.clear-confirmation { margin-top: 18px; }
+			.clear-confirmation p { font-size: 14px; line-height: 1.5; }
+			.account { margin-top: 24px; }
+			.account p { font-size: 14px; overflow-wrap: anywhere; }
+			.account input {
+				width: 100%;
+				min-height: 46px;
+				margin-bottom: 10px;
+				padding: 10px;
+				border: 1px solid #8f8f8a;
+				border-radius: 6px;
+				font: inherit;
+			}
+			.account .undo-button { margin-left: 0; }
 			.ticks {
 				display: grid;
 				grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -124,27 +138,52 @@
 	<p class="hero-title">Start something you've been avoiding.</p>
 	<button id="start-button" type="button">Start</button>
 </div>
+				<section class="account" aria-label="Account">
+					<form id="sign-in-form">
+						<label for="email">Email</label>
+						<input id="email" type="email" autocomplete="email" required placeholder="you@example.com">
+						<button id="sign-in-button" type="submit">Email me a sign-in link</button>
+					</form>
+					<p id="account-email" hidden></p>
+					<button class="undo-button" id="sign-out-button" type="button" hidden>Sign out</button>
+					<p id="account-status" role="status" aria-live="polite"></p>
+				</section>
 				<section class="progress" aria-label="Completed activities">
 				<p class="count" id="count" aria-live="polite">0 done</p>
 					<div class="ticks" id="ticks" aria-hidden="true"></div>
 					<button class="undo-button" id="undo-button" type="button" hidden>Undo activity</button>
+					<button class="undo-button" id="clear-button" type="button" hidden>Clear all history</button>
+					<div class="clear-confirmation" id="clear-confirmation" role="group" aria-label="Confirm clear history" hidden>
+						<p>Delete all completed activities for this account? This cannot be undone.</p>
+						<button id="confirm-clear-button" type="button">Yes, delete all</button>
+						<button class="undo-button" id="cancel-clear-button" type="button">Cancel</button>
+					</div>
+					<button class="undo-button" id="retry-button" type="button" hidden>Retry history</button>
 				</section>
 			</section>
 			<section id="prepare-view" hidden>
-	<h1>Pick the next step. Work on it for 5 minutes</h1>
-	<p class="timer-label">Start within 5 minutes</p>
+	<h1>Pick the next step</h1>
+	<p class="timer-label">You have 5 minutes to open the task and begin</p>
 	<p class="timer" id="prepare-timer" role="timer">5:00</p>
-	<button id="begin-activity-button" type="button">Start 5 minutes</button>
+	<button id="begin-activity-button" type="button">Do it</button>
 	<button class="not-completed-button" id="prepare-not-completed-button" type="button">Not this time</button>
 </section>
 		<section id="activity-view" hidden>
-	<h1>Work on the task for five minutes</h1>
+	<h1>Keep going</h1>
+		<p class="timer-label">Do what you can in five minutes. You can stop when the timer runs out</p>
 	<p class="timer" id="timer" role="timer">5:00</p>
 	<button id="done-button" type="button">Done</button>
+	<p id="activity-status" role="alert"></p>
 	<button class="not-completed-button" id="not-completed-button" type="button">Not completed</button>
 </section>
 		</main>
+		<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 		<script>
+			const SUPABASE_URL = 'https://uucsqoehpahdxspxwcug.supabase.co';
+			const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_3AfYWxszM3n3nTi3mhZNcQ_I2hOTlD6';
+			const configured = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_PUBLISHABLE_KEY !== 'YOUR_SUPABASE_PUBLISHABLE_KEY';
+			const db = configured && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+
 			if (location.protocol !== 'file:' && 'serviceWorker' in navigator) {
 				window.addEventListener('load', () => {
 					navigator.serviceWorker.register('./sw.js').catch(error => {
@@ -157,13 +196,133 @@
 			const prepareView = document.getElementById('prepare-view');
 			const activityView = document.getElementById('activity-view');
 			const button = document.getElementById('done-button');
+			const activityStatus = document.getElementById('activity-status');
 			const undoButton = document.getElementById('undo-button');
+			const clearButton = document.getElementById('clear-button');
+			const clearConfirmation = document.getElementById('clear-confirmation');
+			const confirmClearButton = document.getElementById('confirm-clear-button');
+			const cancelClearButton = document.getElementById('cancel-clear-button');
 			const count = document.getElementById('count');
 			const ticks = document.getElementById('ticks');
+			const startButton = document.getElementById('start-button');
+			const signInForm = document.getElementById('sign-in-form');
+			const signInButton = document.getElementById('sign-in-button');
+			const signOutButton = document.getElementById('sign-out-button');
+			const accountEmail = document.getElementById('account-email');
+			const accountStatus = document.getElementById('account-status');
+			const retryButton = document.getElementById('retry-button');
 			let timer = document.getElementById('prepare-timer');
-			let completed = 0;
+			let user = null;
+			let activities = [];
+			let loading = true;
+			let loadFailed = false;
+			let saving = false;
+			let sessionVersion = 0;
+			let initialized = false;
 			let timerInterval = null;
 			let timerEndsAt = 0;
+
+			function renderHistory() {
+				ticks.replaceChildren();
+				for (const activity of activities) {
+					const tick = document.createElement('span');
+					tick.className = `tick tick--${activity.shape}`;
+					tick.style.backgroundColor = activity.color;
+					tick.textContent = '\u2713';
+					ticks.append(tick);
+				}
+				count.textContent = `${activities.length} done`;
+				if (!user || !activities.length || loading) clearConfirmation.hidden = true;
+				undoButton.hidden = activities.length === 0 || !user;
+				undoButton.disabled = loading || saving;
+				clearButton.hidden = activities.length === 0 || !user || !clearConfirmation.hidden;
+				clearButton.disabled = loading || saving;
+				confirmClearButton.disabled = loading || saving;
+				cancelClearButton.disabled = saving;
+				startButton.disabled = !user || loading || saving;
+				button.disabled = !user || loading || saving;
+				signOutButton.disabled = saving;
+				retryButton.hidden = !user || !loadFailed;
+			}
+
+			async function loadHistory() {
+				const version = sessionVersion;
+				const accountId = user.id;
+				loading = true;
+				loadFailed = false;
+				accountStatus.textContent = 'Loading history...';
+				renderHistory();
+				const rows = [];
+				try {
+					while (true) {
+						const { data, error } = await db.from('completions')
+							.select('id, user_id, completed_at, shape, color')
+							.eq('user_id', accountId)
+							.order('completed_at', { ascending: true })
+							.order('id', { ascending: true })
+							.range(rows.length, rows.length + 999);
+						if (error) throw error;
+						rows.push(...data);
+						if (data.length < 1000) break;
+					}
+					if (version !== sessionVersion) return;
+					activities = rows;
+					loading = false;
+					accountStatus.textContent = '';
+				} catch (error) {
+					if (version !== sessionVersion) return;
+					loadFailed = true;
+					accountStatus.textContent = `Could not load history: ${error.message}`;
+				} finally {
+					if (version === sessionVersion) renderHistory();
+				}
+			}
+
+			if (db) {
+				db.auth.onAuthStateChange((_event, session) => {
+					const nextUser = session?.user || null;
+					if (initialized && nextUser?.id === user?.id) return;
+					initialized = true;
+					sessionVersion += 1;
+					user = nextUser;
+					activities = [];
+					loading = !!user;
+					loadFailed = false;
+					signInForm.hidden = !!user;
+					accountEmail.hidden = !user;
+					accountEmail.textContent = user?.email || '';
+					signOutButton.hidden = !user;
+					accountStatus.textContent = user ? '' : 'Sign in to save your activities.';
+					renderHistory();
+					if (user) setTimeout(loadHistory, 0);
+				});
+			} else {
+				loading = false;
+				signInButton.disabled = true;
+				accountStatus.textContent = configured ? 'Could not load Supabase. Check your connection.' : 'Set your Supabase URL and publishable key to enable sign-in.';
+			}
+			renderHistory();
+
+			signInForm.addEventListener('submit', async event => {
+				event.preventDefault();
+				if (!db) return;
+				signInButton.disabled = true;
+				accountStatus.textContent = 'Sending sign-in link...';
+				const { error } = await db.auth.signInWithOtp({
+					email: document.getElementById('email').value.trim(),
+					options: { emailRedirectTo: location.origin + location.pathname }
+				});
+				accountStatus.textContent = error ? `Could not send link: ${error.message}` : 'Check your email for a sign-in link.';
+				signInButton.disabled = false;
+			});
+
+			signOutButton.addEventListener('click', async () => {
+				signOutButton.disabled = true;
+				const { error } = await db.auth.signOut();
+				if (error) accountStatus.textContent = `Could not sign out: ${error.message}`;
+				signOutButton.disabled = false;
+			});
+			retryButton.addEventListener('click', loadHistory);
 
 			function updateTimer() {
 				const seconds = Math.max(0, Math.ceil((timerEndsAt - Date.now()) / 1000));
@@ -183,7 +342,7 @@
 				timerInterval = setInterval(updateTimer, 250);
 			}
 
-			document.getElementById('start-button').addEventListener('click', () => {
+			startButton.addEventListener('click', () => {
 				homeView.hidden = true;
 				prepareView.hidden = false;
 				startTimer(document.getElementById('prepare-timer'));
@@ -207,30 +366,91 @@
 			document.getElementById('not-completed-button').addEventListener('click', showHome);
 			document.getElementById('prepare-not-completed-button').addEventListener('click', showHome);
 
-			function updateCount() {
-				const label = `${completed} done`;
-				count.textContent = label;
-				undoButton.hidden = completed === 0;
-			}
-
-			button.addEventListener('click', () => {
-				completed += 1;
-				const tick = document.createElement('span');
+			button.addEventListener('click', async () => {
+				if (!user || loading || saving) return;
+				activityStatus.textContent = '';
+				saving = true;
+				renderHistory();
 				const shapes = ['circle', 'square', 'triangle', 'diamond'];
 				const colors = ['#ff776b', '#f2c14e', '#77c9a5', '#78b7d0', '#4f8edc', '#c79ad8', '#f19ca8'];
 				const shape = shapes[Math.floor(Math.random() * shapes.length)];
-				tick.className = `tick tick--${shape}`;
-				tick.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-				tick.textContent = '\u2713';
-				ticks.append(tick);
-				updateCount();
-				showHome();
+				const accountId = user.id;
+				const version = sessionVersion;
+				try {
+					const { data, error } = await db.from('completions')
+						.insert({ user_id: accountId, shape, color: colors[Math.floor(Math.random() * colors.length)] })
+						.select('id, user_id, completed_at, shape, color').single();
+					if (error) throw error;
+					if (version === sessionVersion) {
+						activities.push(data);
+						activities.sort((first, second) => first.completed_at.localeCompare(second.completed_at) || first.id.localeCompare(second.id));
+						accountStatus.textContent = '';
+						showHome();
+					}
+				} catch (error) {
+					if (version === sessionVersion) activityStatus.textContent = `Could not save activity: ${error.message}`;
+				} finally {
+					saving = false;
+					renderHistory();
+				}
 			});
 
-			undoButton.addEventListener('click', () => {
-				ticks.lastElementChild.remove();
-				completed -= 1;
-				updateCount();
+			undoButton.addEventListener('click', async () => {
+				if (!user || loading || saving || !activities.length) return;
+				saving = true;
+				renderHistory();
+				const last = activities[activities.length - 1];
+				const version = sessionVersion;
+				const accountId = user.id;
+				try {
+					const { data, error } = await db.from('completions').delete()
+						.eq('id', last.id).eq('user_id', accountId).select('id');
+					if (error) throw error;
+					if (data.length !== 1) throw new Error('Activity was not found. Retry history.');
+					if (version === sessionVersion) {
+						activities.pop();
+						accountStatus.textContent = '';
+					}
+				} catch (error) {
+					if (version === sessionVersion) accountStatus.textContent = `Could not undo activity: ${error.message}`;
+				} finally {
+					saving = false;
+					renderHistory();
+				}
+			});
+
+			clearButton.addEventListener('click', () => {
+				if (!user || loading || saving || !activities.length) return;
+				clearConfirmation.hidden = false;
+				renderHistory();
+				confirmClearButton.focus();
+			});
+
+			cancelClearButton.addEventListener('click', () => {
+				clearConfirmation.hidden = true;
+				renderHistory();
+				clearButton.focus();
+			});
+
+			confirmClearButton.addEventListener('click', async () => {
+				if (!user || loading || saving || !activities.length || clearConfirmation.hidden) return;
+				const accountId = user.id;
+				const version = sessionVersion;
+				saving = true;
+				renderHistory();
+				try {
+					const { error } = await db.from('completions').delete().eq('user_id', accountId);
+					if (error) throw error;
+					if (version === sessionVersion) {
+						activities = [];
+						accountStatus.textContent = '';
+					}
+				} catch (error) {
+					if (version === sessionVersion) accountStatus.textContent = `Could not clear history: ${error.message}`;
+				} finally {
+					saving = false;
+					renderHistory();
+				}
 			});
 		</script>
 	</body>
