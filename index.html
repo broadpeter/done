@@ -162,7 +162,10 @@
 				width: 78%;
 				clip-path: polygon(50% 6.7%, 0 93.3%, 100% 93.3%);
 			}
-			.tick--diamond { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+			.tick--diamond {
+				width: 78%;
+				clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+			}
 		</style>
 	</head>
 	<body>
@@ -251,6 +254,7 @@
 			let timer = document.getElementById('prepare-timer');
 			let user = null;
 			let activities = [];
+			let undoActivityId = null;
 			let loading = true;
 			let loadFailed = false;
 			let saving = false;
@@ -270,7 +274,7 @@
 				}
 				count.textContent = `${activities.length} done`;
 				if (!user || !activities.length || loading) clearConfirmation.hidden = true;
-				undoButton.hidden = activities.length === 0 || !user;
+				undoButton.hidden = !undoActivityId || !user;
 				undoButton.disabled = loading || saving;
 				clearButton.hidden = activities.length === 0 || !user || !clearConfirmation.hidden;
 				clearButton.disabled = loading || saving;
@@ -323,6 +327,7 @@
 					sessionVersion += 1;
 					user = nextUser;
 					activities = [];
+					undoActivityId = null;
 					loading = !!user;
 					loadFailed = false;
 					signInForm.hidden = !!user;
@@ -420,6 +425,7 @@
 					if (version === sessionVersion) {
 						activities.push(data);
 						activities.sort((first, second) => first.completed_at.localeCompare(second.completed_at) || first.id.localeCompare(second.id));
+						undoActivityId = data.id;
 						accountStatus.textContent = '';
 						showHome();
 					}
@@ -432,19 +438,20 @@
 			});
 
 			undoButton.addEventListener('click', async () => {
-				if (!user || loading || saving || !activities.length) return;
+				if (!user || loading || saving || !undoActivityId) return;
 				saving = true;
 				renderHistory();
-				const last = activities[activities.length - 1];
+				const activityId = undoActivityId;
 				const version = sessionVersion;
 				const accountId = user.id;
 				try {
 					const { data, error } = await db.from('completions').delete()
-						.eq('id', last.id).eq('user_id', accountId).select('id');
+						.eq('id', activityId).eq('user_id', accountId).select('id');
 					if (error) throw error;
 					if (data.length !== 1) throw new Error('Activity was not found. Retry history.');
 					if (version === sessionVersion) {
-						activities.pop();
+						activities = activities.filter(activity => activity.id !== activityId);
+						undoActivityId = null;
 						accountStatus.textContent = '';
 					}
 				} catch (error) {
@@ -479,6 +486,7 @@
 					if (error) throw error;
 					if (version === sessionVersion) {
 						activities = [];
+						undoActivityId = null;
 						accountStatus.textContent = '';
 					}
 				} catch (error) {
