@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rise-v1';
+const CACHE_NAME = 'activity-done-v1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -15,7 +15,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(names => Promise.all(
-      names.filter(name => name.startsWith('rise-') && name !== CACHE_NAME)
+      names.filter(name => name.startsWith('activity-done-') && name !== CACHE_NAME)
         .map(name => caches.delete(name))
     ))
   );
