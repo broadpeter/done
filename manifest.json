@@ -1,12 +1,12 @@
 {
   "name": "Activity Done",
   "short_name": "Activity Done",
-  "description": "Prepare, time, and track completed activities.",
+  "description": "Time activities and track done and not done outcomes.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f6f6f4",
-  "theme_color": "#f6f6f4",
+  "background_color": "#141414",
+  "theme_color": "#141414",
   "icons": [
     {
       "src": "./icon-192-b.png",

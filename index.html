@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<meta name="theme-color" content="#f6f6f4">
+		<meta name="theme-color" content="#141414">
 		<link rel="manifest" href="./manifest.json">
 		<title>Activity Done</title>
 		<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,12 +12,13 @@
 		    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 		<style>
 			:root {
-				color-scheme: light;
+				color-scheme: dark;
 				font-family: 'Inter', sans-serif;
-				background: #f6f6f4;
-				color: #1c1c1a;
-				--muted: #8f8f8a;
-				--coral: #ff776b;
+				background: #141414;
+				color: #f5f5f5;
+				--muted: #a3a3a3;
+				--surface: #222222;
+				--border: #444444;
 			}
 
 			* { box-sizing: border-box; }
@@ -28,7 +29,7 @@
 				padding: 32px 20px 48px;
 				-webkit-font-smoothing: antialiased;
 			}
-			body.activity-theme { background: #ffe0da; }
+			body.activity-theme { background: #141414; }
 
 			main {
 				max-width: 440px;
@@ -40,7 +41,7 @@
 			.hero {
 				padding: 20px 18px;
 				border-radius: 8px;
-				background: #ffe0da;
+				background: var(--surface);
 			}
 			.hero-title {
 				margin: 0 0 20px;
@@ -54,22 +55,22 @@
 				min-height: 46px;
 				border: 0;
 				border-radius: 6px;
-				background: #1c1c1a;
-				color: #fff;
+				background: #f5f5f5;
+				color: #141414;
 				font: 500 15px 'Inter', sans-serif;
 				cursor: pointer;
 			}
 
-			button:hover { background: #383836; }
-			button:focus-visible { outline: 2px solid #1c1c1a; outline-offset: 3px; }
+			button:hover { background: #dcdcdc; }
+			button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 			.not-completed-button {
 				margin-top: 12px;
 				background: transparent;
-				border: 1px solid #1c1c1a;
-				color: #1c1c1a;
+				border: 1px solid var(--border);
+				color: #f5f5f5;
 			}
-			.not-completed-button:hover { background: rgba(28, 28, 26, 0.08); }
-			.timer-label { margin: 0 0 4px; color: #5b5b56; font-size: 14px; }
+			.not-completed-button:hover { background: var(--surface); }
+			.timer-label { margin: 0 0 4px; color: var(--muted); font-size: 14px; }
 			.timer {
 				margin: 0 0 24px;
 				font-size: 56px;
@@ -84,7 +85,7 @@
 				margin: 12px 0 0 auto;
 				padding: 0;
 				background: none;
-				color: #1c1c1a;
+				color: #f5f5f5;
 				font-size: 14px;
 			}
 			.undo-button:hover:not(:disabled) { background: none; text-decoration: underline; }
@@ -92,16 +93,16 @@
 
 			.progress { margin-top: 40px; }
 			.progress h2 { margin: 0 0 8px; font-size: 18px; font-weight: 500; }
-			.count { margin: 0 0 18px; font-size: 14px; color: #1c1c1a; }
+			.count { margin: 0 0 18px; font-size: 14px; color: #f5f5f5; }
 			#clear-button { color: var(--muted); }
 			.clear-confirmation { margin-top: 18px; }
 			.clear-confirmation p { font-size: 14px; line-height: 1.5; }
 			.account {
 				margin: 0 0 24px 0;
 				padding: 12px 14px;
-				border: 1px solid #e8e8e5;
+				border: 1px solid var(--border);
 				border-radius: 8px;
-				background: #fff;
+				background: var(--surface);
 			}
 			.sync-row { display: flex; align-items: center; gap: 8px; }
 			.account label {
@@ -122,11 +123,13 @@
 				min-height: 0;
 				margin: 0;
 				padding: 8px 9px;
-				border: 1px solid #e8e8e5;
+				border: 1px solid var(--border);
 				border-radius: 5px;
-				color: var(--muted);
+				background: #141414;
+				color: #f5f5f5;
 				font: 13px 'Inter', sans-serif;
 			}
+			.account input::placeholder { color: var(--muted); opacity: 1; }
 			.account .sync-button {
 				width: auto;
 				min-height: 0;
@@ -138,7 +141,7 @@
 				font: 13px 'Inter', sans-serif;
 				white-space: nowrap;
 			}
-			.account .sync-button:hover:not(:disabled) { background: none; color: #1c1c1a; }
+			.account .sync-button:hover:not(:disabled) { background: none; color: #fff; }
 			.account p { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
 			#account-email { flex: 1; }
 			#account-status:empty { display: none; }
@@ -150,25 +153,14 @@
 			}
 
 			.tick {
-				display: grid;
-				place-items: center;
+				display: block;
 				width: 70%;
 				aspect-ratio: 1;
 				margin: auto;
-				background: var(--coral);
-				color: #1c1c1a;
-				font-size: 20px;
-				font-weight: 600;
+				background: #fff;
+				border-radius: 50%;
 			}
-			.tick--circle { border-radius: 50%; }
-			.tick--triangle {
-				width: 78%;
-				clip-path: polygon(50% 6.7%, 0 93.3%, 100% 93.3%);
-			}
-			.tick--diamond {
-				width: 78%;
-				clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-			}
+			.tick--not-done { background: transparent; border: 2px solid #fff; }
 		</style>
 	</head>
 	<body>
@@ -188,36 +180,30 @@
 					<p id="account-status" role="status" aria-live="polite"></p>
 				</section>
 				<div class="hero">
-	<p class="hero-title">Start something you've been avoiding.</p>
+	<p class="hero-title">Get up and move</p>
 	<button id="start-button" type="button">Start</button>
 </div>
-				<section class="progress" aria-label="Completed activities">
+				<section class="progress" aria-label="Activity history">
 				<p class="count" id="count" aria-live="polite">0 done</p>
 					<div class="ticks" id="ticks" aria-hidden="true"></div>
 					<button class="undo-button" id="undo-button" type="button" hidden>Undo activity</button>
 					<button class="undo-button" id="clear-button" type="button" hidden>Clear all history</button>
 					<div class="clear-confirmation" id="clear-confirmation" role="group" aria-label="Confirm clear history" hidden>
-						<p>Delete all completed activities for this account? This cannot be undone.</p>
+						<p>Delete all activity history for this account? This cannot be undone.</p>
 						<button id="confirm-clear-button" type="button">Yes, delete all</button>
 						<button class="undo-button" id="cancel-clear-button" type="button">Cancel</button>
 					</div>
 					<button class="undo-button" id="retry-button" type="button" hidden>Retry history</button>
 				</section>
 			</section>
-			<section id="prepare-view" hidden>
-	<h1>Pick the next step</h1>
-	<p class="timer-label">You have 5 minutes to open the task and begin</p>
-	<p class="timer" id="prepare-timer" role="timer">5:00</p>
-	<button id="begin-activity-button" type="button">Do it</button>
-	<button class="not-completed-button" id="prepare-not-completed-button" type="button">Not this time</button>
-</section>
 		<section id="activity-view" hidden>
 	<h1>Keep going</h1>
 		<p class="timer-label">Do what you can in five minutes. You can stop when the timer runs out</p>
 	<p class="timer" id="timer" role="timer">5:00</p>
 	<button id="done-button" type="button">Done</button>
 	<p id="activity-status" role="alert"></p>
-	<button class="not-completed-button" id="not-completed-button" type="button">Not completed</button>
+	<button class="not-completed-button" id="not-done-button" type="button">Not done</button>
+	<button class="undo-button" id="skip-button" type="button">Skip</button>
 </section>
 		</main>
 		<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -236,9 +222,10 @@
 			}
 
 			const homeView = document.getElementById('home-view');
-			const prepareView = document.getElementById('prepare-view');
 			const activityView = document.getElementById('activity-view');
 			const button = document.getElementById('done-button');
+			const notDoneButton = document.getElementById('not-done-button');
+			const skipButton = document.getElementById('skip-button');
 			const activityStatus = document.getElementById('activity-status');
 			const undoButton = document.getElementById('undo-button');
 			const clearButton = document.getElementById('clear-button');
@@ -254,7 +241,7 @@
 			const accountEmail = document.getElementById('account-email');
 			const accountStatus = document.getElementById('account-status');
 			const retryButton = document.getElementById('retry-button');
-			let timer = document.getElementById('prepare-timer');
+			const timer = document.getElementById('timer');
 			let user = null;
 			let activities = [];
 			let undoActivityId = null;
@@ -270,12 +257,11 @@
 				ticks.replaceChildren();
 				for (const activity of activities) {
 					const tick = document.createElement('span');
-					tick.className = `tick tick--${activity.shape}`;
-					tick.style.backgroundColor = activity.color;
-					tick.textContent = '\u2713';
+					tick.className = activity.is_completed === false ? 'tick tick--not-done' : 'tick';
 					ticks.append(tick);
 				}
-				count.textContent = `${activities.length} done`;
+				const notDoneCount = activities.filter(activity => activity.is_completed === false).length;
+				count.textContent = `${activities.length - notDoneCount} done` + (notDoneCount ? `, ${notDoneCount} not done` : '');
 				if (!user || !activities.length || loading) clearConfirmation.hidden = true;
 				undoButton.hidden = !undoActivityId || !user;
 				undoButton.disabled = loading || saving;
@@ -285,6 +271,8 @@
 				cancelClearButton.disabled = saving;
 				startButton.disabled = !user || loading || saving;
 				button.disabled = !user || loading || saving;
+				notDoneButton.disabled = !user || loading || saving;
+				skipButton.disabled = saving;
 				signOutButton.disabled = saving;
 				retryButton.hidden = !user || !loadFailed;
 			}
@@ -299,8 +287,8 @@
 				const rows = [];
 				try {
 					while (true) {
-						const { data, error } = await db.from('completions')
-							.select('id, user_id, completed_at, shape, color')
+						const { data, error } = await db.from('rise_activities')
+							.select('id, user_id, completed_at, shape, color, is_completed')
 							.eq('user_id', accountId)
 							.order('completed_at', { ascending: true })
 							.order('id', { ascending: true })
@@ -377,9 +365,8 @@
 				}
 			}
 
-			function startTimer(display) {
+			function startTimer() {
 				clearInterval(timerInterval);
-				timer = display;
 				document.body.classList.add('activity-theme');
 				timerEndsAt = Date.now() + 5 * 60 * 1000;
 				updateTimer();
@@ -387,43 +374,37 @@
 			}
 
 			startButton.addEventListener('click', () => {
+				if (!user || loading || saving) return;
+				activityStatus.textContent = '';
 				homeView.hidden = true;
-				prepareView.hidden = false;
-				startTimer(document.getElementById('prepare-timer'));
-			});
-
-			document.getElementById('begin-activity-button').addEventListener('click', () => {
-				prepareView.hidden = true;
 				activityView.hidden = false;
-				startTimer(document.getElementById('timer'));
+				startTimer();
 			});
 
 			function showHome() {
 				clearInterval(timerInterval);
 				timerInterval = null;
-				prepareView.hidden = true;
 				activityView.hidden = true;
 				homeView.hidden = false;
 				document.body.classList.remove('activity-theme');
 			}
 
-			document.getElementById('not-completed-button').addEventListener('click', showHome);
-			document.getElementById('prepare-not-completed-button').addEventListener('click', showHome);
+			skipButton.addEventListener('click', () => {
+				if (saving) return;
+				showHome();
+			});
 
-			button.addEventListener('click', async () => {
+			async function saveActivity(isCompleted) {
 				if (!user || loading || saving) return;
 				activityStatus.textContent = '';
 				saving = true;
 				renderHistory();
-				const shapes = ['circle', 'square', 'triangle', 'diamond'];
-				const colors = ['#ff776b', '#f2c14e', '#77c9a5', '#78b7d0', '#4f8edc', '#c79ad8', '#f19ca8'];
-				const shape = shapes[Math.floor(Math.random() * shapes.length)];
 				const accountId = user.id;
 				const version = sessionVersion;
 				try {
-					const { data, error } = await db.from('completions')
-						.insert({ user_id: accountId, shape, color: colors[Math.floor(Math.random() * colors.length)] })
-						.select('id, user_id, completed_at, shape, color').single();
+					const { data, error } = await db.from('rise_activities')
+						.insert({ user_id: accountId, shape: 'circle', color: '#ffffff', is_completed: isCompleted })
+						.select('id, user_id, completed_at, shape, color, is_completed').single();
 					if (error) throw error;
 					if (version === sessionVersion) {
 						activities.push(data);
@@ -438,7 +419,10 @@
 					saving = false;
 					renderHistory();
 				}
-			});
+			}
+
+			button.addEventListener('click', () => saveActivity(true));
+			notDoneButton.addEventListener('click', () => saveActivity(false));
 
 			undoButton.addEventListener('click', async () => {
 				if (!user || loading || saving || !undoActivityId) return;
@@ -448,7 +432,7 @@
 				const version = sessionVersion;
 				const accountId = user.id;
 				try {
-					const { data, error } = await db.from('completions').delete()
+					const { data, error } = await db.from('rise_activities').delete()
 						.eq('id', activityId).eq('user_id', accountId).select('id');
 					if (error) throw error;
 					if (data.length !== 1) throw new Error('Activity was not found. Retry history.');
@@ -485,7 +469,7 @@
 				saving = true;
 				renderHistory();
 				try {
-					const { error } = await db.from('completions').delete().eq('user_id', accountId);
+					const { error } = await db.from('rise_activities').delete().eq('user_id', accountId);
 					if (error) throw error;
 					if (version === sessionVersion) {
 						activities = [];
