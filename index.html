@@ -91,12 +91,13 @@
 			button:disabled { cursor: not-allowed; color: var(--muted); }
 			.completion-message:empty { display: none; }
 			.completion-message {
-				margin: 16px 0 0;
-				padding: 14px 18px;
+				margin: 0 0 16px;
+				padding: 20px 18px;
 				border-radius: 8px;
 				background: #ffe0da;
-				font-size: 15px;
-				line-height: 1.5;
+				font-size: clamp(26px, 8vw, 34px);
+				font-weight: 600;
+				line-height: 1.15;
 			}
 
 			.progress { margin-top: 40px; }
@@ -196,11 +197,11 @@
 					</div>
 					<p id="account-status" role="status" aria-live="polite"></p>
 				</section>
+				<p class="completion-message" id="completion-message" role="status" aria-live="polite"></p>
 				<div class="hero">
 	<p class="hero-title">Start something you've been avoiding.</p>
 	<button id="start-button" type="button">Start</button>
 </div>
-				<p class="completion-message" id="completion-message" role="status" aria-live="polite"></p>
 				<section class="progress" aria-label="Completed activities">
 				<p class="count" id="count" aria-live="polite">0 done</p>
 					<div class="ticks" id="ticks" aria-hidden="true"></div>
