@@ -89,6 +89,15 @@
 			}
 			.undo-button:hover:not(:disabled) { background: none; text-decoration: underline; }
 			button:disabled { cursor: not-allowed; color: var(--muted); }
+			.completion-message:empty { display: none; }
+			.completion-message {
+				margin: 16px 0 0;
+				padding: 14px 18px;
+				border-radius: 8px;
+				background: #ffe0da;
+				font-size: 15px;
+				line-height: 1.5;
+			}
 
 			.progress { margin-top: 40px; }
 			.progress h2 { margin: 0 0 8px; font-size: 18px; font-weight: 500; }
@@ -191,6 +200,7 @@
 	<p class="hero-title">Start something you've been avoiding.</p>
 	<button id="start-button" type="button">Start</button>
 </div>
+				<p class="completion-message" id="completion-message" role="status" aria-live="polite"></p>
 				<section class="progress" aria-label="Completed activities">
 				<p class="count" id="count" aria-live="polite">0 done</p>
 					<div class="ticks" id="ticks" aria-hidden="true"></div>
@@ -240,6 +250,7 @@
 			const activityView = document.getElementById('activity-view');
 			const button = document.getElementById('done-button');
 			const activityStatus = document.getElementById('activity-status');
+			const completionMessage = document.getElementById('completion-message');
 			const undoButton = document.getElementById('undo-button');
 			const clearButton = document.getElementById('clear-button');
 			const clearConfirmation = document.getElementById('clear-confirmation');
@@ -265,6 +276,16 @@
 			let initialized = false;
 			let timerInterval = null;
 			let timerEndsAt = 0;
+			let completionMessageTimeout = null;
+
+			function setCompletionMessage(message = '') {
+				clearTimeout(completionMessageTimeout);
+				completionMessage.textContent = message;
+				completionMessageTimeout = message ? setTimeout(() => {
+					completionMessage.textContent = '';
+					completionMessageTimeout = null;
+				}, 5000) : null;
+			}
 
 			function renderHistory() {
 				ticks.replaceChildren();
@@ -328,6 +349,7 @@
 					if (initialized && nextUser?.id === user?.id) return;
 					initialized = true;
 					sessionVersion += 1;
+					setCompletionMessage();
 					user = nextUser;
 					activities = [];
 					undoActivityId = null;
@@ -387,6 +409,7 @@
 			}
 
 			startButton.addEventListener('click', () => {
+				setCompletionMessage();
 				homeView.hidden = true;
 				prepareView.hidden = false;
 				startTimer(document.getElementById('prepare-timer'));
@@ -431,6 +454,7 @@
 						undoActivityId = data.id;
 						accountStatus.textContent = '';
 						showHome();
+						setCompletionMessage('You did something you were avoiding.');
 					}
 				} catch (error) {
 					if (version === sessionVersion) activityStatus.textContent = `Could not save activity: ${error.message}`;
@@ -456,6 +480,7 @@
 						activities = activities.filter(activity => activity.id !== activityId);
 						undoActivityId = null;
 						accountStatus.textContent = '';
+						setCompletionMessage();
 					}
 				} catch (error) {
 					if (version === sessionVersion) accountStatus.textContent = `Could not undo activity: ${error.message}`;
@@ -491,6 +516,7 @@
 						activities = [];
 						undoActivityId = null;
 						accountStatus.textContent = '';
+						setCompletionMessage();
 					}
 				} catch (error) {
 					if (version === sessionVersion) accountStatus.textContent = `Could not clear history: ${error.message}`;

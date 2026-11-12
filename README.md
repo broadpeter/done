@@ -37,3 +37,5 @@
 5. Serve this folder over HTTP(S), such as `python -m http.server 8000`, then visit `http://localhost:8000/`. Opening the HTML directly with `file://` does not provide a usable redirect URL. Sign in with your email, open the link on that same browser to finish authentication, and try Done and Undo. On another browser/device, sign in with the same email to restore the history. Clearing browser data signs you out, but signing in again restores it.
 
 The timer and in-progress task state remain local. A completion appears in the count only after its database insert succeeds; Undo removes it only after the database delete succeeds. Internet access is required to load the Supabase client and sync history.
+
+After a completion is saved, the home screen shows "You did something you were avoiding." for five seconds. Starting another activity, undoing the completion, clearing history, or switching accounts dismisses the message.
